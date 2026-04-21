@@ -168,32 +168,113 @@ N:1 P:1 K:1 | pH: 0 | umid: 50.0% temp: 24.0C | bomba:OFF
 ```
 N:1 P:1 K:1 | pH: 5 | umid: 91.0% temp: 24.0C | bomba:OFF
   [ALERTA] Solo encharcado - risco de podridao radicular
-N:1 P:1 K:1 | pH: 5 | umid: 91.0% temp: 24.0C | bomba:OFF
-  [ALERTA] Solo encharcado - risco de podridao radicular
-```
-
-![Cenário D — Solo encharcado](prints/cenario_D_encharcado.png.png)
+N:1 P:1 K:1 | pH: 5 | umid: 91.
 
 ---
 
-## 📁 Estrutura do projeto
+## 🧩 Entregas opcionais (Ir Além)
 
-```
-.
-├── sketch.ino          # Firmware do ESP32
-├── diagram.json        # Circuito do Wokwi
-├── README.md
-└── prints/             # Capturas dos cenários de teste
-    ├── sistemacompleto.png
-    ├── cenario_A_bomba_on.png.png
-    ├── cenario_B_fosforo.png.png
-    ├── cenario_C_ph.png.png
-    └── cenario_D_encharcado.png.png
-```
+Além do sistema embarcado principal, o projeto inclui dois módulos complementares que estendem a decisão de irrigação para fora do ESP32:
+
+- **Opcional 1** — script Python que consulta a API pública do **OpenWeather** e recomenda suspender a irrigação quando há previsão de chuva.
+- **Opcional 2** — script R com **análise estatística** de dados simulados dos sensores (coeficiente de variação, correlação, regressão linear e regressão logística).
+
+A integração com o ESP32 do Wokwi é **manual**: o simulador do Wokwi não acessa a internet, então o usuário roda os scripts no computador e repassa o resultado (um inteiro 0/1 no Serial Monitor, ou ajustando o código antes de rodar o sketch).
 
 ---
 
-## 👥 Equipe
+### 📡 Opcional 1 — Python + OpenWeather API
 
-Trabalho desenvolvido para a **FIAP — Inteligência Artificial / Fase 2**.
-Cap. _FarmTech Solutions: da Visão à Implementação_.
+**Pasta:** [`opcional1_python/`](opcional1_python/) · **Script:** [`openweather_check.py`](opcional1_python/openweather_check.py)
+
+Consulta a previsão de 5 dias / 3 horas do OpenWeather para **Curitiba/PR** (cidade de referência do viveiro), analisa as próximas 12 horas (configurável) e recomenda:
+
+- **SUSPENDER** a irrigação se a probabilidade máxima de chuva (POP) for ≥ 50% **ou** o acumulado previsto for ≥ 1 mm;
+- **PROSSEGUIR** caso contrário.
+
+A saída inclui uma linha pronta para ser copiada no Serial Monitor do Wokwi:
+
+```
+CHUVA_PREVISTA=1  IRRIGAR_MANUAL=0  // SUSPENDER
+```
+
+#### Pré-requisitos
+
+- Python 3.8+
+- Conta gratuita no [OpenWeather](https://home.openweathermap.org/users/sign_up) e uma API key ativa (a chave costuma levar de 10 min a 2h para propagar após o cadastro)
+
+> ⚠️ **Segurança:** a chave nunca é gravada no código — o script lê da variável de ambiente `OPENWEATHER_API_KEY`. Nunca faça commit da sua chave.
+
+#### Como executar
+
+```powershell
+# Windows (PowerShell)
+$env:OPENWEATHER_API_KEY = "sua_chave_aqui"
+cd opcional1_python
+python openweather_check.py "Curitiba,BR"
+```
+
+```bash
+# Linux / macOS
+export OPENWEATHER_API_KEY="sua_chave_aqui"
+cd opcional1_python
+python3 openweather_check.py "Curitiba,BR"
+```
+
+Argumentos opcionais:
+
+- `cidade` — no formato `"Nome,PaisISO"` (padrão: `Curitiba,BR`)
+- `--horas N` — janela em horas para checar chuva (padrão: 12)
+
+O script usa apenas a biblioteca padrão do Python (`urllib`, `json`, `argparse`) — sem dependências externas para instalar.
+
+---
+
+### 📊 Opcional 2 — Análise estatística em R
+
+**Pasta:** [`opcional2_r/`](opcional2_r/) · **Script:** [`analise_irrigacao.R`](opcional2_r/analise_irrigacao.R) · **Dados:** [`dados_sensores.csv`](opcional2_r/dados_sensores.csv)
+
+Script em R que processa 25 linhas simuladas de leituras dos sensores e produz uma análise estatística completa da base, alinhada à mesma regra de irrigação do `sketch.ino`.
+
+#### Dataset (`dados_sensores.csv`)
+
+25 registros com as colunas:
+
+| Coluna    | Tipo     | Descrição                                |
+| --------- | -------- | ---------------------------------------- |
+| `umidade` | numérico | Umidade do solo (%)                      |
+| `ph`      | inteiro  | pH do solo (0–14)                        |
+| `n`       | 0/1      | Nitrogênio presente                      |
+| `p`       | 0/1      | Fósforo presente (nutriente crítico)     |
+| `k`       | 0/1      | Potássio presente                        |
+| `irrigou` | 0/1      | Decisão da bomba (rótulo)                |
+
+Os rótulos foram gerados aplicando exatamente a regra do ESP32 — 10 registros com `irrigou=1` e 15 com `irrigou=0`, com variação em todos os cenários possíveis (solo seco, encharcado, pH fora da faixa, fósforo ausente etc.).
+
+#### Técnicas aplicadas
+
+1. **Estatística descritiva** — `summary()` com quartis, média, mediana e extremos por coluna.
+2. **Coeficiente de variação (CV)** — cobrado pela disciplina de R da FIAP. Resultado esperado: umidade ≈ 25,7% (média dispersão), pH ≈ 20,4% (média dispersão), variáveis binárias > 30% (alta dispersão — comportamento esperado para 0/1).
+3. **Matriz de correlação de Pearson** — com interpretação automática da força (muito fraca / fraca / moderada / forte / muito forte).
+4. **Regressão linear simples** — `lm(umidade ~ ph)` como exemplo pedagógico da técnica exigida pela FIAP; imprime a equação e o R².
+5. **Regressão logística** — `glm(irrigou ~ umidade + ph + n + p + k, family = binomial)` como modelo de decisão binária; inclui matriz de confusão, acurácia e odds ratios.
+
+Além dos resultados no console, o script salva **3 gráficos PNG** na pasta:
+
+- `grafico_boxplot_umidade.png` — umidade por decisão de irrigação
+- `grafico_cv.png` — coeficiente de variação por variável
+- `grafico_scatter_umid_ph.png` — dispersão umidade × pH colorida por decisão
+
+#### Pré-requisitos
+
+- R 4.0 ou superior ([cran.r-project.org](https://cran.r-project.org/))
+- Nenhum pacote externo — o script usa apenas **base R**
+
+#### Como executar
+
+```bash
+cd opcional2_r
+Rscript analise_irrigacao.R
+```
+
+Ou abrir o arquivo no **RStudio** e executar linha a linha.
