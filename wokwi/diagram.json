@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "author": "FarmTech Solutions",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "sw_n",
+      "top": -120,
+      "left": -240,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "sw_p",
+      "top": -20,
+      "left": -240,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "sw_k",
+      "top": 80,
+      "left": -240,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-photoresistor-sensor",
+      "id": "ldr",
+      "top": 262.4,
+      "left": -133.6,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht1",
+      "top": -40,
+      "left": 220,
+      "attrs": { "temperature": "24", "humidity": "55" }
+    },
+    {
+      "type": "wokwi-relay-module",
+      "id": "rele",
+      "top": -200,
+      "left": 80,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    ["esp:TX0", "$serialMonitor:RX", "", []],
+    ["esp:RX0", "$serialMonitor:TX", "", []],
+    ["sw_n:1", "esp:GND.1", "black", ["v18.8", "h348.7", "v216.2"]],
+    ["sw_n:2", "esp:D4", "green", ["v9.2", "h377.6", "v196.8"]],
+    ["sw_p:1", "esp:GND.1", "black", ["v14.8", "h334.8"]],
+    [
+      "sw_p:2",
+      "esp:D18",
+      "green",
+      ["v5.2", "h41.6", "v-28.8", "h307.2", "v91.3"]
+    ],
+    ["sw_k:1", "esp:GND.1", "black", ["v106.8", "h348.7", "v-71.8"]],
+    ["sw_k:2", "esp:D19", "green", ["v20.4", "h325.3"]],
+    ["ldr:VCC", "esp:3V3", "red", ["h82.4", "v-124.8", "h4", "h-23.5"]],
+    ["ldr:GND", "esp:GND.2", "black", ["h38.4", "v-48.4", "h-105.6", "v-91"]],
+    ["ldr:AO", "esp:D34", "yellow", ["h15.2", "v-58.3", "h-86.4", "v-196.5"]],
+    ["dht1:VCC", "esp:3V3", "red", ["h-71.8", "v78.7", "h-57.6", "h-4.3"]],
+    ["dht1:GND", "esp:GND.2", "black", ["v136.3", "h-283", "v-62.2"]],
+    ["dht1:SDA", "esp:D15", "orange", ["v59.5", "h-143.2"]],
+    ["rele:VCC", "esp:VIN", "red", ["h-348.8", "v339.5"]],
+    ["rele:GND", "esp:GND.2", "black", ["v-1.8", "h-329.6", "v321.8"]],
+    ["rele:IN", "esp:D5", "blue", ["h-12.8", "v27.2", "h67.2", "v225.7"]]
+  ],
+  "dependencies": {}
+}
